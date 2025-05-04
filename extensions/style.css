@@ -1,0 +1,24 @@
+.download {
+  background: url("images/icon-02.png") no-repeat center center;
+  display: none;
+  background-size: contain;
+  height: 50px;
+  width: 50px;
+  cursor: pointer;
+}
+
+body {
+  width: 350px;
+  padding: 10px;
+}
+
+div {
+  text-align: center;
+  margin: 20px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
+}

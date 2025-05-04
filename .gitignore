@@ -1,0 +1,18 @@
+.env
+*.env
+server/node_modules/
+server/dist/
+server/build/
+extensions/dist/
+extensions/build/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+tempCodeRunnerFile.*
+*.code-workspace
+*.docx
+*.enl
+*.Data/
+My EndNote Library.Data/
