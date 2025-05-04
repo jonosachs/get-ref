@@ -1,8 +1,8 @@
 # Endnote website citation chrome extension
 
-Chrome extension to get citation from current website url in Endnote format (.enw). 
+Chrome extension to get citation from current website url in Endnote format (.enw).
 Uses website meta data and Google Gemini API. Requires local server to run.
 Citations are displayed in editable HTML fields to allow corrections etc.
 Citation can then be downloaded and imported directly into Endnote.
 
-![img.png](screen-shot.png)
+![screen-shot.png](screen-shot.png)
