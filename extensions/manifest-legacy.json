@@ -4,14 +4,12 @@
   "version": "1.0.0",
   "description": "Download current webpage citation as .enw (EndNote Import) file",
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/index.html",
     "default_icon": {
-      "32": "images/icon-01.png"
+      "32": "icon-01.png"
     }
   },
   "permissions": ["scripting", "tabs", "activeTab"],
-  "host_permissions": [
-    "<all_urls>",
-    "https://generativelanguage.googleapis.com/*"
-  ]
+  "host_permissions": ["<all_urls>", "https://generativelanguage.googleapis.com/*"]
 }
+h
