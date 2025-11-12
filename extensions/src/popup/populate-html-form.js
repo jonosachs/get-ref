@@ -12,20 +12,18 @@ export function populateHtmlForm(citation) {
     } catch (error) {
       console.error(`Failed to populate HTML form for key: ${key}`);
       console.error(error);
-
-      // label.innerHTML = enwTags[key];
-
-      // textArea = document.createElement("textarea");
-      // textArea.id = key;
-      // textArea.value = value ? value : null;
-
-      // const br1 = document.createElement("br");
-      // const br2 = document.createElement("br");
-
-      // form.appendChild(label);
-      // form.appendChild(textArea);
-      // form.appendChild(br1);
-      // form.appendChild(br2);
+      addFieldToForm(key, value, form);
     }
   });
+}
+
+function addFieldToForm(key, value, form) {
+  const label = document.createElement("label");
+  label.innerHTML = enwTags[key];
+  form.appendChild(label);
+
+  const textArea = document.createElement("textarea");
+  textArea.id = key;
+  textArea.value = value ? value : null;
+  form.appendChild(textArea);
 }
