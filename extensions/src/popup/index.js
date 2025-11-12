@@ -1,5 +1,5 @@
 import { getUrlMetaData } from "../content/get-url-metadata";
-import { postMetaData } from "./post-metadata";
+import { getCitationFromServer } from "./get-citation";
 import { populateHtmlForm } from "./populate-html-form";
 import { packageForDownload } from "./package-for-download";
 
@@ -7,19 +7,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   const errorBar = document.getElementById("errorBar");
   const infoBar = document.getElementById("infoBar");
   const getCitationButton = document.getElementById("getCitationBtn");
-  const form = document.getElementById("refForm");
-  const downloadButton = document.getElementById("downloadBtn");
 
-  // Get current tab and inject getUrlMetaData function
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    currentWindow: true,
-  });
-
-  const [{ result: urlMetaData }] = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: getUrlMetaData,
-  });
+  const urlMetaData = await injectFunction(getUrlMetaData);
 
   if (!urlMetaData) {
     errorBar.innerText = "Failed to get URL metadata from current webpage";
@@ -28,18 +17,34 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Get citation button logic
   getCitationButton.addEventListener("click", async () => {
-    noteBar.innerText = "Attempting to fetch citation..";
+    infoBar.innerText = "Attempting to fetch citation..";
     errorBar.innerText = "";
 
     // Fetch citation from local server
-    const citation = await postMetaData(urlMetaData);
-    noteBar.innerText = "";
+    const apiPath = "http://localhost:3000/citation";
+    const citation = await getCitationFromServer(apiPath, urlMetaData);
+    infoBar.innerText = "";
 
-    if (citation) {
-      populateHtmlForm(citation);
-      packageForDownload(citation);
-    } else {
-      errorBar.innerText = "Failed to fetch citation";
+    if (citation.error) {
+      errorBar.innerText = citation.error;
+      return;
     }
+
+    populateHtmlForm(citation);
+    packageForDownload(citation);
   });
 });
+
+async function injectFunction(func) {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+
+  const [{ result: data }] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: func,
+  });
+
+  return data;
+}

@@ -1,38 +1,39 @@
-import { fetchLlm } from "./fetch-llm.js";
+import { parseResponse } from "./parse-response.js";
 import { llmPrompt } from "./prompt.js";
-import { createExpressApp } from "./express.js";
-import { sanitiseResponse } from "./sanitise-response.js";
 
-const DEFAULT_PORT = process.env.PORT || 3000;
-
-export async function runServer(port = DEFAULT_PORT) {
-  const app = createExpressApp();
-
-  // Setup API endpoint to fetch citation from LLM
-  app.post("/gemini", async (req, res) => {
+export async function runServer(app, port, llm) {
+  // create API endpoint to accept url metadata and return formatted citation from LLM
+  app.post("/citation", async (req, res) => {
     try {
-      const urlMetaData = req.body.urlMetaData;
+      const urlMetaData = req?.body?.urlMetaData;
+      validate(urlMetaData);
 
-      if (!urlMetaData) {
-        return res.status(400).json({ error: "Missing URL metadata in request body" });
-      }
+      const llmResponse = await llm.fetch(buildPrompt(llmPrompt, urlMetaData));
+      const parsed = parseResponse(llmResponse);
 
-      if (urlMetaData.length > 100_000) {
-        return res.status(400).json({
-          error: "URL metadata is too long, please try again with a shorter webpage",
-        });
-      }
-
-      const llmResponse = await fetchLlm(llmPrompt, urlMetaData);
-      const sanitised = sanitiseResponse(llmResponse);
-
-      return res.status(200).json(sanitised);
+      return res.status(200).json(parsed);
     } catch (error) {
-      return res.status(500).json({ error: "Failed to fetch data from LLM API." });
+      return res
+        .status(error.status || 500)
+        .json({ error: `Failed to fetch data from LLM API. ${error.message}` });
     }
   });
 
   return app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
   });
+}
+
+function validate(urlMetaData) {
+  if (!urlMetaData || urlMetaData == null) {
+    throw new Error("Missing URL metadata in request body");
+  }
+
+  if (urlMetaData.length > 100_000) {
+    throw new Error("URL metadata is too long, please try again with a shorter webpage");
+  }
+}
+
+function buildPrompt(llmPrompt, urlMetaData) {
+  return llmPrompt + "\n\n" + "USER\n" + urlMetaData;
 }

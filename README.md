@@ -5,7 +5,7 @@ Get Ref AI is a Chrome extension plus local proxy server that converts the metad
 ### Architecture
 
 - `extensions/` – Vite-powered Chrome extension (popup UI, content scripts, download helpers).
-- `server/` – Express proxy that accepts metadata, calls Gemini, and returns cleaned JSON.
+- `server/` – Express proxy (bootstrapped via `main.js` + `express.js`) that accepts metadata, calls Gemini, and returns cleaned JSON.
 - `screen-shot.png` – quick preview of the popup state.
 
 ### Prerequisites
@@ -35,7 +35,7 @@ cd server
 node main.js
 ```
 
-The server listens on `http://localhost:3000/gemini` and must stay running whenever you use the extension.
+`main.js` loads `server/.env`, constructs a fresh Express app, and starts listening on `http://localhost:3000/gemini`. Keep this process running whenever the extension is active.
 
 ### Developing the extension
 
