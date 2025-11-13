@@ -23,3 +23,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+meta_data_sample.txt
+endnote_filter_tags.xlsx

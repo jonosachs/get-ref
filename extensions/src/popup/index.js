@@ -1,22 +1,28 @@
 import { getUrlMetaData } from "../content/get-url-metadata";
 import { getCitationFromServer } from "./get-citation";
 import { populateHtmlForm } from "./populate-html-form";
-import { packageForDownload } from "./package-for-download";
+import { download } from "./download";
 
 window.addEventListener("DOMContentLoaded", async () => {
   const errorBar = document.getElementById("errorBar");
   const infoBar = document.getElementById("infoBar");
   const getCitationButton = document.getElementById("getCitationBtn");
+  const form = document.getElementById("refForm");
+  const downloadBtn = document.getElementById("downloadBtn");
 
-  const urlMetaData = await injectFunction(getUrlMetaData);
-
-  if (!urlMetaData) {
-    errorBar.innerText = "Failed to get URL metadata from current webpage";
-    return;
-  }
-
-  // Get citation button logic
   getCitationButton.addEventListener("click", async () => {
+    form.innerHTML = "";
+    downloadBtn.style.display = "none";
+
+    const urlMetaData = await injectFunction(getUrlMetaData);
+
+    if (!urlMetaData) {
+      errorBar.innerText = "Unable to get URL meta data. Please try again.";
+      return;
+    }
+
+    console.log("urlMetaData", urlMetaData);
+
     infoBar.innerText = "Attempting to fetch citation..";
     errorBar.innerText = "";
 
@@ -30,8 +36,15 @@ window.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    populateHtmlForm(citation);
-    packageForDownload(citation);
+    populateHtmlForm(form, citation);
+
+    // Show download button and add click event listener
+    downloadBtn.style.display = "inline-block";
+    downloadBtn.style.backgroundImage = `url(${chrome.runtime.getURL("icon-02.png")})`;
+    downloadBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      download(citation);
+    });
   });
 });
 

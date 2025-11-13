@@ -1,25 +1,15 @@
-import { enwTags } from "./enw-tags";
-
-// Create (if not existing) and populate HTML fields with citation data
-export function populateHtmlForm(citation) {
-  const form = document.getElementById("refForm");
-  let textArea;
+// Create form fields and populate with citation data
+export function populateHtmlForm(form, citation) {
+  form.innerHTML = "";
 
   Object.entries(citation).forEach(([key, value]) => {
-    try {
-      textArea = document.getElementById(key);
-      textArea.value = value ? value : null;
-    } catch (error) {
-      console.error(`Failed to populate HTML form for key: ${key}`);
-      console.error(error);
-      addFieldToForm(key, value, form);
-    }
+    createField(key, value, form);
   });
 }
 
-function addFieldToForm(key, value, form) {
+function createField(key, value, form) {
   const label = document.createElement("label");
-  label.innerHTML = enwTags[key];
+  label.innerHTML = key;
   form.appendChild(label);
 
   const textArea = document.createElement("textarea");
