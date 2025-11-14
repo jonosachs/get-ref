@@ -1,3 +1,5 @@
+import { enwTags } from "./enw-tags";
+
 // Create form fields and populate with citation data
 export function populateHtmlForm(form, citation) {
   form.innerHTML = "";
@@ -9,7 +11,9 @@ export function populateHtmlForm(form, citation) {
 
 function createField(key, value, form) {
   const label = document.createElement("label");
-  label.innerHTML = key;
+  // Get human-readable name from enwTags object
+  const humanReadableName = enwTags[key] || key;
+  label.innerHTML = humanReadableName;
   form.appendChild(label);
 
   const textArea = document.createElement("textarea");

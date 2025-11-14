@@ -13,7 +13,7 @@ export function download(citation) {
   const urlBlob = URL.createObjectURL(blob);
 
   // Use citation title for filename
-  const title = citation["%T"];
+  const title = citation["%T"] || "citation";
   const a = document.createElement("a");
   a.href = urlBlob;
   a.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.enw`;

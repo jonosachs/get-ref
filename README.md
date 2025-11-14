@@ -1,124 +1,98 @@
-## Get Ref AI
+# Get-Ref AI
 
-Get Ref AI is a Chrome extension backed by a lightweight Express server that turns the metadata of the current tab into an EndNote-compatible citation. The popup gathers `<head>` data, posts it to the local server, and the server calls Google’s Gemini API, sanitises the JSON, and sends it back so you can review or download the `.enw` file.
+Get-Ref AI is a two-part toolchain that turns any web page into an EndNote-friendly citation:
+
+- A Chrome extension scrapes high-signal metadata from the active tab, lets you review/edit the suggested fields, and exports an `.enw` file.
+- A lightweight Node.js server forwards the collected metadata to a Large Language Model (LLM) prompt tuned for deterministic EndNote tagging, then returns the cleaned JSON payload to the extension.
 
 ![Popup screenshot](screen-shot.png)
 
----
+## Architecture
 
-### Features
-
-- One-click capture of the active tab’s metadata (titles, meta tags, JSON-LD, authors, etc.).
-- Local proxy server keeps the Gemini API key off the client and enforces payload validation.
-- Popup displays the parsed EndNote fields for manual edits before download.
-- Produces `.enw` files with the correct `%` tags for EndNote import.
-
----
-
-### Project Structure
+- `extensions/`: Vite + CRX-powered Chrome extension (Manifest V3). It injects a DOM-scraping helper into the active tab, posts the metadata to the local API, renders the returned fields, and downloads the citation.
+- `server/`: Express server that exposes `POST /citation`. It validates the payload, builds the LLM prompt (`server/prompt.js`), calls the Gemini API (or another compatible endpoint), and normalizes the model response.
 
 ```
-get-ref-ai/
-├─ extensions/           # Vite + CRX powered Chrome extension
-│  ├─ src/
-│  │  ├─ popup/         # Popup UI, download helpers, server client
-│  │  └─ content/       # Functions injected into the active tab
-│  └─ manifest.config.js
-├─ server/               # Express proxy + Gemini client
-│  ├─ main.js           # Entry point (loads env, boots server)
-│  ├─ api.js            # Route definition and request validation
-│  ├─ llm.js            # Generic LLM client (Gemini payload today)
-│  └─ parse-response.js # Cleans & parses Gemini output
-├─ .env                  # Environment variables (not committed)
-└─ screen-shot.png       # Popup preview
+┌─────────────┐      metadata       ┌─────────────┐     prompt + metadata     ┌─────────────┐
+│   Browser   │ ─────────────────▶  │  Local API  │ ─────────────────────────▶│   Gemini    │
+│ extension   │◀──────────────────  │  (Express)  │◀──────────────────────────│    API      │
+└─────────────┘   citation JSON     └─────────────┘      structured JSON      └─────────────┘
 ```
 
----
+## Prerequisites
 
-### Requirements
+- Node.js 18+ and npm.
+- A Gemini (Generative Language) API key with access to the `models/gemini-1.5-*` endpoint (or another endpoint that accepts the same request body).
+- Google Chrome or any Chromium browser with developer mode enabled for loading unpacked extensions.
 
-- Node.js 18+ (native `fetch`, ES modules).
-- Chrome/Chromium for loading the extension.
-- Google Gemini API key with `gemini-2.0-flash` access.
+## Setup
 
----
-
-### Setup
-
-1. **Install dependencies**
-   ```bash
-   cd server && npm install
-   cd ../extensions && npm install
-   ```
-2. **Create `.env` at the repo root**
-   ```bash
-   GEMINI_API_KEY=your_api_key
-   GEMINI_API_PATH=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
-   PORT=3000   # optional override for the Express server
-   ```
-
----
-
-### Running the local server
+### 1. Server
 
 ```bash
 cd server
+npm install
+```
+
+Create a `.env` file (see `server/main.js` for the expected variable names):
+
+```env
+GEMINI_API_KEY=your-api-key
+GEMINI_API_PATH=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent
+PORT=3000   # optional; defaults to 3000 if omitted
+```
+
+Start the API:
+
+```bash
 node main.js
 ```
 
-`main.js` loads `.env`, builds the Express app (with CORS + JSON body parsing) and exposes `POST /citation`. Leave this process running whenever you use the extension.
+> **Tip:** the current `package.json` references `server.js`; until that script is updated, run `node main.js` directly.
 
----
-
-### Using the extension in development
-
-1. Start Vite so the popup reloads on save:
-   ```bash
-   cd extensions
-   npm run dev
-   ```
-2. Open `chrome://extensions`, enable **Developer mode**, and **Load unpacked** → `extensions/dist`.
-3. The popup initially shows a “Vite Dev Mode” splash with a dev URL. Open that URL in a normal browser tab to interact with the live popup while coding. (Alternatively run `npm run build` for a production-ready popup directly in Chrome.)
-
----
-
-### Production build
+### 2. Chrome extension
 
 ```bash
 cd extensions
+npm install
 npm run build
 ```
 
-Vite outputs the packed extension to `extensions/dist/`. Use `vite-plugin-zip-pack`’s artifact under `extensions/release/` if you need a distributable ZIP for the Chrome Web Store.
+The build generates the unpacked extension in `extensions/dist` and a zipped artifact under `extensions/release/`.
 
----
+Load the unpacked build in Chrome:
 
-### How the pieces work together
+1. Visit `chrome://extensions`.
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and select `<repo>/extensions/dist`.
 
-1. Popup loads `extensions/src/popup/index.js`, which injects `getUrlMetaData` into the active tab via `chrome.scripting`.
-2. Clicking **Get Citation** posts the combined metadata to `http://localhost:3000/citation`.
-3. `server/api.js` validates the payload, builds the Gemini prompt, and calls the injected `Llm` instance.
-4. `parse-response.js` strips any formatting noise from Gemini’s reply and returns strict JSON ready for EndNote tags.
-5. The popup populates the EndNote fields, lets you make edits, and `package-for-download.js` converts them into a `.enw` download.
+## Usage
 
----
+1. Navigate to the article or page you want to cite.
+2. Ensure the local API server is running (`http://localhost:3000` by default).
+3. Click the Get-Ref extension icon, then **Get Citation**.
+4. Review or tweak any of the returned EndNote fields.
+5. Click the download icon to export an `.enw` file named after the `%T` (Title) field.
 
-### Troubleshooting
+## Development Workflow
 
-- **`GEMINI_API_KEY is not set`** – ensure `.env` is at the repo root and `node server/main.js` is launched from `get-ref-ai/`.
-- **Popup never loads** – run `npm run build` first or keep `npm run dev` running so the dev URL resolves.
-- **`Failed to fetch data from LLM API`** – check the server console for the detailed error (invalid key, quota, malformed metadata).
-- **Downloads empty or malformed** – confirm Gemini returned valid JSON; `parse-response` logs errors in the server terminal if the JSON can’t be parsed.
+- `npm run dev` (inside `extensions/`) runs Vite's development server with hot module reloading for the popup UI.
+- `npm run build` bundles the extension, runs the CRX manifest transforms, and creates a distributable zip.
+- The server currently has no automated tests. If you make changes to validation/parsing, consider adding unit tests for `parse-response.js` and integration tests for `api.js`.
 
----
+## Troubleshooting
 
-### Possible Next Steps
+- **CORS or network errors:** The extension talks to `http://localhost:3000/citation`. Confirm the API server is running and reachable from Chrome.
+- **LLM errors:** The server surfaces raw Gemini error messages. Verify your API key, quota, and that the `GEMINI_API_PATH` matches the model you have access to.
+- **Malformed citations:** Inspect `server/parse-response.js` and the LLM prompt if the JSON shape drifts. Parsing is strict, so unexpected model output will raise an error that gets surfaced in the popup.
 
-- Add schema validation (e.g., Zod) before returning the citation JSON.
-- Improve the popup UI (loading states, multi-error display, field reordering).
-- Expand the `Llm` class to support alternative models or retry policies.
-- Add automated tests for `parse-response` and the metadata collector using sample HTML in `meta_data_sample.txt`.
+## Project Status
 
-Happy citing! 📚
+This project is an early prototype. Known gaps include:
+
+- There are no automated tests for the server or extension.
+- Better error handling and retry logic would make the extension more resilient when the LLM or local API is offline.
+
+Contributions and issue reports are welcome!
 
 \*README generated using Codex.
