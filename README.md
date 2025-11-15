@@ -45,10 +45,10 @@ PORT=3000   # optional; defaults to 3000 if omitted
 Start the API:
 
 ```bash
-node main.js
+npm start
 ```
 
-> **Tip:** the current `package.json` references `server.js`; until that script is updated, run `node main.js` directly.
+> **Tip:** `npm start` simply runs `node main.js`, so feel free to invoke either command when debugging.
 
 ### 2. Chrome extension
 
